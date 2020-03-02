@@ -22,7 +22,7 @@ from pytonik.cmd import lang
 from pytonik import Version
 from typing import Any, Callable, Dict, List, Pattern, Union
 from pytonik.cmd.console import (  # type: ignore
-    colorize, bold, red, turquoise, nocolor, color_terminal
+    colorize, bold, red, green, turquoise, nocolor, color_terminal
 )
 
 import webbrowser
@@ -164,24 +164,47 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--version', action='version', dest='show_version',
                         version='%%(prog)s %s' % Version.VERSION_TEXT)
 
-    parser.add_argument('path', metavar='PROJECT_DIR', default='.', nargs='?',
-                        help=__('project root'))
+    parser.add_argument('port', default='6060', nargs='?',)
 
     return parser
 
 def ask(d: Dict) -> None:
+
     print(bold(__('Run Pytonik Server.')))
 
-    d['run'] = do_prompt(__('Do you want to run this project (y/n)'), 'n', boolean)
+    d['run'] = do_prompt(__('Do you want to run this project using default port (y/n)'), 'n', boolean)
 
     if d.get('run', '') is True:
-
         serv()
 
     else:
-        sys.exit(-1)
+        d['port'] = do_prompt(__('Enter Custom Port'))
+        if d.get('port', '') != "":
+            if type(d.get('port', '')):
+
+
+                askg(d)
+
+
+            else:
+                print(bold(red(__('Enter Only Number'))))
+                askg(d)
+
+        else:
+            d['quite'] = do_prompt(__('Do you want exite (y/n)'), 'n', boolean)
+            if d.get('quite', '') is True:
+                sys.exit(-1)
+            else:
+                askg(d)
 
         print()
+
+
+def askg(d):
+
+    serv(port=d.get('port', ''))
+
+
 
 
 def main(argv: List[str] = sys.argv[1:]) -> int:
@@ -195,9 +218,16 @@ def main(argv: List[str] = sys.argv[1:]) -> int:
     d = vars(args)
     ask(d)
 
-def serv(path =""):
-    portno = randint(1000, 9999)
+def serv(path ="", port=6060):
+    ##randint(1000, 9999)
+
+    try:
+        portno = int(port)
+    except Exception as err:
+        print(bold(red(__("Accept only int, not String !!"))))
+        return False
     server = HTTPServer
+
     handler = CGIHTTPRequestHandler
     server_address = ("", portno)
 
@@ -242,7 +272,8 @@ def serv(path =""):
     url = "localhost"
     server = ThreadedHTTPServer((url, portno), pysteveHTTPHandler)
     l = "{}:{}".format(url, portno)
-    print("Pytonik development server running on "+l)
+    print(bold(green("Pytonik development server running on " + str(l))))
+
     webbrowser.open_new(l)
     server.serve_forever()
 
